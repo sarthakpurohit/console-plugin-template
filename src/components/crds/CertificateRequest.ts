@@ -1,26 +1,24 @@
 import { K8sGroupVersionKind } from '@openshift-console/dynamic-plugin-sdk/lib/extensions/console-types';
 import { K8sResourceCommon } from '@openshift-console/dynamic-plugin-sdk';
 
-export const CertificateModel: K8sGroupVersionKind = {
+export const CertificateRequestModel: K8sGroupVersionKind = {
   group: 'cert-manager.io',
   version: 'v1',
-  kind: 'Certificate',
+  kind: 'CertificateRequest',
 };
 
-export interface Certificate extends K8sResourceCommon {
+export interface CertificateRequest extends K8sResourceCommon {
   spec?: {
-    secretName?: string;
     issuerRef?: { name?: string; kind?: string; group?: string };
-    dnsNames?: string[];
+    request?: string;
     duration?: string;
-    renewBefore?: string;
+    isCA?: boolean;
     [key: string]: unknown;
   };
   status?: {
     conditions?: Array<{ type: string; status: string; reason?: string; message?: string }>;
-    notBefore?: string;
-    notAfter?: string;
-    renewalTime?: string;
+    certificate?: string;
+    ca?: string;
     [key: string]: unknown;
   };
 }

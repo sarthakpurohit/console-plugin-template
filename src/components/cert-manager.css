@@ -1,0 +1,130 @@
+.console-plugin-template__dashboard-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--xl);
+}
+
+.console-plugin-template__resource-card {
+  margin-bottom: 0;
+}
+
+/* Table container */
+.console-plugin-template__resource-table {
+  overflow: hidden;
+}
+
+.console-plugin-template__table-responsive {
+  overflow-x: auto;
+}
+
+.console-plugin-template__table {
+  border-collapse: collapse;
+  width: 100%;
+  background-color: var(--pf-t--global--background--color--primary--default);
+}
+
+.console-plugin-template__table-th {
+  padding: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
+  text-align: left;
+  vertical-align: middle;
+  background-color: var(--pf-t--global--background--color--secondary--default);
+  border-bottom: 1px solid var(--pf-t--global--border--color--default);
+  font-weight: var(--pf-t--global--font--weight--body--bold);
+}
+
+.console-plugin-template__table-tr {
+  border-bottom: 1px solid var(--pf-t--global--border--color--default);
+}
+
+.console-plugin-template__table-tr:hover {
+  background-color: var(--pf-t--global--background--color--secondary--hover);
+}
+
+.console-plugin-template__table-td {
+  padding: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
+  text-align: left;
+  vertical-align: middle;
+  word-wrap: break-word;
+  overflow: hidden;
+}
+
+/* Table messages (empty state, error) */
+.console-plugin-template__table-message {
+  padding: var(--pf-t--global--spacer--lg);
+}
+
+/* Loader (three-dot) */
+.console-plugin-template__loader {
+  display: flex;
+  gap: var(--pf-t--global--spacer--sm);
+  align-items: center;
+  justify-content: center;
+  padding: var(--pf-t--global--spacer--lg);
+}
+
+.console-plugin-template__loader-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--pf-t--global--color--brand--default);
+  animation: console-plugin-template-loader-bounce 1.2s infinite ease-in-out;
+}
+
+.console-plugin-template__loader-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.console-plugin-template__loader-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.console-plugin-template__loader-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes console-plugin-template-loader-bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Action buttons */
+.console-plugin-template__action-buttons {
+  display: flex;
+  gap: var(--pf-t--global--spacer--xs);
+  flex-wrap: nowrap;
+}
+
+.console-plugin-template__action-inspect {
+  flex-shrink: 0;
+}
+
+.console-plugin-template__action-delete {
+  flex-shrink: 0;
+}
+
+/* Inspect page layout */
+.console-plugin-template__inspect-page {
+  padding: var(--pf-t--global--spacer--lg) var(--pf-t--global--spacer--xl);
+}
+
+.console-plugin-template__inspect-header {
+  display: flex;
+  align-items: center;
+  gap: var(--pf-t--global--spacer--md);
+  margin-bottom: var(--pf-t--global--spacer--lg);
+}
+
+.console-plugin-template__inspect-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--lg);
+}

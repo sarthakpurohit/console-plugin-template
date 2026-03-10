@@ -1,0 +1,237 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "openshift-console-plugin.name" . }}-cert-manager-reader
+  labels:
+    {{- include "openshift-console-plugin.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - cert-manager.io
+    resources:
+      - certificates
+      - certificaterequests
+      - issuers
+      - clusterissuers
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "openshift-console-plugin.name" . }}-cert-manager-reader
+  labels:
+    {{- include "openshift-console-plugin.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "openshift-console-plugin.name" . }}-cert-manager-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ template "openshift-console-plugin.name" . }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "openshift-console-plugin.name" . }}-cert-manager-admin
+  labels:
+    {{- include "openshift-console-plugin.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - cert-manager.io
+    resources:
+      - certificates
+      - certificaterequests
+      - issuers
+      - clusterissuers
+    verbs:
+      - get
+      - list
+      - watch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "openshift-console-plugin.name" . }}-cert-manager-admin
+  labels:
+    {{- include "openshift-console-plugin.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "openshift-console-plugin.name" . }}-cert-manager-admin
+subjects:
+  - kind: ServiceAccount
+    name: {{ template "openshift-console-plugin.name" . }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "openshift-console-plugin.name" . }}-nfd-reader
+  labels:
+    {{- include "openshift-console-plugin.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - nfd.openshift.io
+    resources:
+      - nodefeaturediscoveries
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - nfd.k8s-sigs.io
+    resources:
+      - nodefeaturerules
+      - nodefeatures
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "openshift-console-plugin.name" . }}-nfd-reader
+  labels:
+    {{- include "openshift-console-plugin.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "openshift-console-plugin.name" . }}-nfd-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ template "openshift-console-plugin.name" . }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "openshift-console-plugin.name" . }}-nfd-admin
+  labels:
+    {{- include "openshift-console-plugin.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - nfd.openshift.io
+    resources:
+      - nodefeaturediscoveries
+    verbs:
+      - get
+      - list
+      - watch
+      - delete
+  - apiGroups:
+      - nfd.k8s-sigs.io
+    resources:
+      - nodefeaturerules
+      - nodefeatures
+    verbs:
+      - get
+      - list
+      - watch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "openshift-console-plugin.name" . }}-nfd-admin
+  labels:
+    {{- include "openshift-console-plugin.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "openshift-console-plugin.name" . }}-nfd-admin
+subjects:
+  - kind: ServiceAccount
+    name: {{ template "openshift-console-plugin.name" . }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "openshift-console-plugin.name" . }}-pipelines-reader
+  labels:
+    {{- include "openshift-console-plugin.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - tekton.dev
+    resources:
+      - pipelines
+      - pipelineruns
+      - tasks
+      - taskruns
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - operator.tekton.dev
+    resources:
+      - tektonconfigs
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "openshift-console-plugin.name" . }}-pipelines-reader
+  labels:
+    {{- include "openshift-console-plugin.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "openshift-console-plugin.name" . }}-pipelines-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ template "openshift-console-plugin.name" . }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "openshift-console-plugin.name" . }}-pipelines-admin
+  labels:
+    {{- include "openshift-console-plugin.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - tekton.dev
+    resources:
+      - pipelines
+      - pipelineruns
+      - tasks
+      - taskruns
+    verbs:
+      - get
+      - list
+      - watch
+      - delete
+  - apiGroups:
+      - operator.tekton.dev
+    resources:
+      - tektonconfigs
+    verbs:
+      - get
+      - list
+      - watch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "openshift-console-plugin.name" . }}-pipelines-admin
+  labels:
+    {{- include "openshift-console-plugin.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "openshift-console-plugin.name" . }}-pipelines-admin
+subjects:
+  - kind: ServiceAccount
+    name: {{ template "openshift-console-plugin.name" . }}
+    namespace: {{ .Release.Namespace }}

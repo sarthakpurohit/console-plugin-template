@@ -22,6 +22,7 @@ import { ArrowLeftIcon, KeyIcon, CheckCircleIcon, TimesCircleIcon } from '@patte
 import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
 import { CertificateModel } from './components/crds/Certificate';
 import { IssuerModel, ClusterIssuerModel } from './components/crds/Issuer';
+import { CertificateRequestModel } from './components/crds/CertificateRequest';
 import { ExternalSecretModel, ClusterExternalSecretModel } from './components/crds/ExternalSecret';
 import { SecretStoreModel, ClusterSecretStoreModel } from './components/crds/SecretStore';
 import { PushSecretModel, ClusterPushSecretModel } from './components/crds/PushSecret';
@@ -30,50 +31,133 @@ import {
   SecretProviderClassPodStatusModel,
   SecretProviderClassPodStatus,
 } from './components/crds/SecretProviderClass';
+import {
+  NodeFeatureDiscoveryModel,
+  NodeFeatureRuleModel,
+  NodeFeatureModel,
+} from './components/crds/Nfd';
+import {
+  PipelineModel,
+  PipelineRunModel,
+  TaskModel,
+  TaskRunModel,
+  TektonConfigModel,
+} from './components/crds/Pipelines';
 import { EventModel, getInvolvedObjectKind, K8sEvent } from './components/crds/Events';
 import { dump as yamlDump } from 'js-yaml';
+import './components/cert-manager.css';
 
-// YAML syntax colors (on black background): blue (keys), mustard yellow (values)
-const YAML_KEY_COLOR = '#60a5fa';
-const YAML_VALUE_COLOR = '#eab308';
 const HIDDEN_VALUE_PLACEHOLDER = '********';
+
+const DISPLAY_NAMES: Record<string, string> = {
+  certificates: 'Certificate',
+  certificaterequests: 'CertificateRequest',
+  issuers: 'Issuer',
+  clusterissuers: 'ClusterIssuer',
+  externalsecrets: 'ExternalSecret',
+  clusterexternalsecrets: 'ClusterExternalSecret',
+  secretstores: 'SecretStore',
+  clustersecretstores: 'ClusterSecretStore',
+  pushsecrets: 'PushSecret',
+  clusterpushsecrets: 'ClusterPushSecret',
+  secretproviderclasses: 'SecretProviderClass',
+  nodefeaturediscoveries: 'NodeFeatureDiscovery',
+  nodefeaturerules: 'NodeFeatureRule',
+  nodefeatures: 'NodeFeature',
+  pipelines: 'Pipeline',
+  pipelineruns: 'PipelineRun',
+  tasks: 'Task',
+  taskruns: 'TaskRun',
+  tektonconfigs: 'TektonConfig',
+};
+
+function getResourceModel(resourceType: string) {
+  switch (resourceType) {
+    case 'certificates':
+      return CertificateModel;
+    case 'certificaterequests':
+      return CertificateRequestModel;
+    case 'issuers':
+      return IssuerModel;
+    case 'clusterissuers':
+      return ClusterIssuerModel;
+    case 'externalsecrets':
+      return ExternalSecretModel;
+    case 'clusterexternalsecrets':
+      return ClusterExternalSecretModel;
+    case 'secretstores':
+      return SecretStoreModel;
+    case 'clustersecretstores':
+      return ClusterSecretStoreModel;
+    case 'pushsecrets':
+      return PushSecretModel;
+    case 'clusterpushsecrets':
+      return ClusterPushSecretModel;
+    case 'secretproviderclasses':
+      return SecretProviderClassModel;
+    case 'nodefeaturediscoveries':
+      return NodeFeatureDiscoveryModel;
+    case 'nodefeaturerules':
+      return NodeFeatureRuleModel;
+    case 'nodefeatures':
+      return NodeFeatureModel;
+    case 'pipelines':
+      return PipelineModel;
+    case 'pipelineruns':
+      return PipelineRunModel;
+    case 'tasks':
+      return TaskModel;
+    case 'taskruns':
+      return TaskRunModel;
+    case 'tektonconfigs':
+      return TektonConfigModel;
+    default:
+      return null;
+  }
+}
+
+function getPagePath(pathname: string): string {
+  const parts = pathname.split('/');
+  const inspectIndex = parts.findIndex((p) => p === 'inspect');
+  if (inspectIndex > 0) {
+    return '/' + parts.slice(1, inspectIndex).join('/');
+  }
+  return '/';
+}
 
 function colorizeYaml(yamlString: string): React.ReactNode {
   const lines = yamlString.split('\n');
   return (
     <>
       {lines.map((line, i) => {
-        // Key: value
         const keyValueMatch = line.match(/^(\s*)(.+?)(\s*:\s*)(.*)$/);
         if (keyValueMatch) {
           const [, indent, key, sep, value] = keyValueMatch;
           return (
             <span key={i}>
               {indent}
-              <span style={{ color: YAML_KEY_COLOR }}>{key}</span>
+              <span style={{ color: 'var(--pf-t--color--blue--30)' }}>{key}</span>
               {sep}
-              <span style={{ color: YAML_VALUE_COLOR }}>{value}</span>
+              <span style={{ color: 'var(--pf-t--color--yellow--30)' }}>{value}</span>
               {'\n'}
             </span>
           );
         }
-        // List item: - value
         const listMatch = line.match(/^(\s*)(-\s+)(.*)$/);
         if (listMatch) {
           const [, indent, dash, rest] = listMatch;
           return (
             <span key={i}>
               {indent}
-              <span style={{ color: YAML_KEY_COLOR }}>{dash.trim() || '-'}</span>
-              <span style={{ color: YAML_VALUE_COLOR }}>{rest}</span>
+              <span style={{ color: 'var(--pf-t--color--blue--30)' }}>{dash.trim() || '-'}</span>
+              <span style={{ color: 'var(--pf-t--color--yellow--30)' }}>{rest}</span>
               {'\n'}
             </span>
           );
         }
-        // Comment or continuation line: use value color for non-empty, keep structure
         if (line.trim().startsWith('#')) {
           return (
-            <span key={i} style={{ color: '#6b7280' }}>
+            <span key={i} style={{ color: 'var(--pf-t--global--text--color--subtle)' }}>
               {line}
               {'\n'}
             </span>
@@ -81,7 +165,7 @@ function colorizeYaml(yamlString: string): React.ReactNode {
         }
         return (
           <span key={i}>
-            {line ? <span style={{ color: YAML_VALUE_COLOR }}>{line}</span> : null}
+            {line ? <span style={{ color: 'var(--pf-t--color--yellow--30)' }}>{line}</span> : null}
             {'\n'}
           </span>
         );
@@ -91,18 +175,14 @@ function colorizeYaml(yamlString: string): React.ReactNode {
 }
 
 export const ResourceInspect: React.FC = () => {
-  const { t } = useTranslation('plugin__ocp-secrets-management');
+  const { t } = useTranslation('plugin__console-plugin-template');
 
-  // State for revealing sensitive data (separate for spec and status)
   const [showSpecSensitiveData, setShowSpecSensitiveData] = React.useState(false);
   const [showStatusSensitiveData, setShowStatusSensitiveData] = React.useState(false);
 
-  // Parse URL manually since useParams() isn't working in plugin environment
   const pathname = window.location.pathname;
   const pathParts = pathname.split('/');
 
-  // Expected format: /secrets-management/inspect/{resourceType}/{namespace}/{name}
-  // or: /secrets-management/inspect/{resourceType}/{name} (for cluster-scoped)
   const baseIndex = pathParts.findIndex((part) => part === 'inspect');
   const resourceType =
     baseIndex >= 0 && pathParts.length > baseIndex + 1 ? pathParts[baseIndex + 1] : '';
@@ -111,70 +191,40 @@ export const ResourceInspect: React.FC = () => {
   let name: string;
 
   if (pathParts.length > baseIndex + 3) {
-    // Format: /secrets-management/inspect/{resourceType}/{namespace}/{name}
     namespace = pathParts[baseIndex + 2];
     name = pathParts[baseIndex + 3];
   } else {
-    // Format: /secrets-management/inspect/{resourceType}/{name} (cluster-scoped)
     name = pathParts[baseIndex + 2] || '';
   }
 
   const handleBackClick = () => {
-    window.history.back();
+    const backPath = getPagePath(pathname);
+    window.location.href = backPath;
   };
 
-  // Determine the correct model based on resource type
-  const getResourceModel = () => {
-    switch (resourceType) {
-      case 'certificates':
-        return CertificateModel;
-      case 'issuers':
-        return IssuerModel;
-      case 'clusterissuers':
-        return ClusterIssuerModel;
-      case 'externalsecrets':
-        return ExternalSecretModel;
-      case 'clusterexternalsecrets':
-        return ClusterExternalSecretModel;
-      case 'secretstores':
-        return SecretStoreModel;
-      case 'clustersecretstores':
-        return ClusterSecretStoreModel;
-      case 'pushsecrets':
-        return PushSecretModel;
-      case 'clusterpushsecrets':
-        return ClusterPushSecretModel;
-      case 'secretproviderclasses':
-        return SecretProviderClassModel;
-      default:
-        return null;
-    }
-  };
-
-  const model = getResourceModel();
+  const model = getResourceModel(resourceType);
   const isClusterScoped =
     resourceType === 'clusterissuers' ||
     resourceType === 'clustersecretstores' ||
     resourceType === 'clusterexternalsecrets' ||
-    resourceType === 'clusterpushsecrets';
+    resourceType === 'clusterpushsecrets' ||
+    resourceType === 'nodefeaturerules';
 
   const [resource, loaded, loadError] = useK8sWatchResource<any>({
     groupVersionKind: model,
     name: name,
-    namespace: isClusterScoped ? undefined : namespace || 'demo',
+    namespace: isClusterScoped ? undefined : namespace || 'default',
     isList: false,
   });
 
-  // Watch SecretProviderClassPodStatus resources when inspecting a SecretProviderClass
   const [podStatuses, podStatusesLoaded, podStatusesError] = useK8sWatchResource<
     SecretProviderClassPodStatus[]
   >({
     groupVersionKind: SecretProviderClassPodStatusModel,
-    namespace: resourceType === 'secretproviderclasses' ? namespace || 'demo' : undefined,
+    namespace: resourceType === 'secretproviderclasses' ? namespace || 'default' : undefined,
     isList: true,
   });
 
-  // Watch Events for this resource (involvedObject name/kind/namespace)
   const eventsNamespace = isClusterScoped ? 'default' : namespace || 'default';
   const involvedKind = getInvolvedObjectKind(resourceType);
   const eventsFieldSelector = [
@@ -209,7 +259,7 @@ export const ResourceInspect: React.FC = () => {
             isHorizontal
             style={{
               rowGap: '0.25rem',
-              background: '#1e1e1e',
+              background: 'var(--pf-t--global--background--color--secondary--default)',
               paddingTop: '16px',
               paddingLeft: '16px',
               paddingBottom: '16px',
@@ -349,19 +399,20 @@ export const ResourceInspect: React.FC = () => {
       );
     }
 
-    const cardStyle = {
-      background: '#1e1e1e',
-      borderRadius: '4px',
-      border: '1px solid #374151',
-    };
     return (
-      <Card style={cardStyle}>
+      <Card
+        style={{
+          background: 'var(--pf-t--global--background--color--secondary--default)',
+          borderRadius: '4px',
+          border: '1px solid var(--pf-t--global--border--color--default)',
+        }}
+      >
         <CardTitle style={{ color: 'var(--pf-t--color--blue--30)' }}>{t('Labels')}</CardTitle>
         <CardBody>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {Object.entries(labels).map(([key, value]) => (
               <Label key={key} color="blue">
-                {key}: {value}
+                {key}: {value as string}
               </Label>
             ))}
           </div>
@@ -385,16 +436,23 @@ export const ResourceInspect: React.FC = () => {
       );
     }
 
-    const cardStyle = {
-      background: '#1e1e1e',
-      borderRadius: '4px',
-      border: '1px solid #374151',
-    };
     return (
-      <Card style={cardStyle}>
+      <Card
+        style={{
+          background: 'var(--pf-t--global--background--color--secondary--default)',
+          borderRadius: '4px',
+          border: '1px solid var(--pf-t--global--border--color--default)',
+        }}
+      >
         <CardTitle style={{ color: 'var(--pf-t--color--blue--30)' }}>{t('Annotations')}</CardTitle>
         <CardBody>
-          <DescriptionList isHorizontal style={{ rowGap: '0.25rem', background: '#1e1e1e' }}>
+          <DescriptionList
+            isHorizontal
+            style={{
+              rowGap: '0.25rem',
+              background: 'var(--pf-t--global--background--color--secondary--default)',
+            }}
+          >
             {Object.entries(annotations).map(([key, value]) => (
               <DescriptionListGroup
                 key={key}
@@ -409,7 +467,7 @@ export const ResourceInspect: React.FC = () => {
                   {key}
                 </DescriptionListTerm>
                 <DescriptionListDescription style={{ wordBreak: 'break-all', flex: 1 }}>
-                  {value}
+                  {value as string}
                 </DescriptionListDescription>
               </DescriptionListGroup>
             ))}
@@ -419,7 +477,6 @@ export const ResourceInspect: React.FC = () => {
     );
   };
 
-  // Function to check if object contains sensitive data
   const containsSensitiveData = (obj: any): boolean => {
     const sensitiveKeys = [
       'password',
@@ -438,7 +495,6 @@ export const ResourceInspect: React.FC = () => {
       'cert',
       'certificate',
       'tls',
-      // SecretProviderClass specific sensitive patterns
       'tenantId',
       'clientId',
       'subscriptionId',
@@ -457,27 +513,28 @@ export const ResourceInspect: React.FC = () => {
     ];
 
     const checkObject = (data: any): boolean => {
-      if (Array.isArray(data)) {
-        return data.some(checkObject);
-      }
-
+      if (Array.isArray(data)) return data.some(checkObject);
       if (data && typeof data === 'object') {
         for (const [key, value] of Object.entries(data)) {
           const lowerKey = key.toLowerCase();
-          const isSensitive = sensitiveKeys.some((sensitiveKey) =>
-            lowerKey.includes(sensitiveKey.toLowerCase()),
-          );
-
-          if (isSensitive || checkObject(value)) {
-            return true;
-          }
+          const isSensitive = sensitiveKeys.some((sk) => lowerKey.includes(sk.toLowerCase()));
+          if (isSensitive || checkObject(value)) return true;
         }
       }
-
       return false;
     };
 
     return checkObject(obj);
+  };
+
+  const preStyle: React.CSSProperties = {
+    padding: '16px',
+    borderRadius: '4px',
+    overflow: 'auto',
+    fontSize: '13px',
+    maxHeight: '400px',
+    background: 'var(--pf-t--global--background--color--secondary--default)',
+    border: '1px solid var(--pf-t--global--border--color--default)',
   };
 
   const renderSpecification = () => {
@@ -496,26 +553,18 @@ export const ResourceInspect: React.FC = () => {
                 id="spec-sensitive-toggle"
                 label={showSpecSensitiveData ? t('Hide sensitive data') : t('Show sensitive data')}
                 isChecked={showSpecSensitiveData}
-                onChange={(event, checked) => setShowSpecSensitiveData(checked)}
+                onChange={(_event, checked) => setShowSpecSensitiveData(checked)}
                 ouiaId="SpecificationSensitiveToggle"
               />
             )}
           </div>
         </CardTitle>
         <CardBody>
-          <pre
-            style={{
-              padding: '16px',
-              borderRadius: '4px',
-              overflow: 'auto',
-              fontSize: '13px',
-              maxHeight: '400px',
-              background: '#1e1e1e',
-              border: '1px solid #374151',
-            }}
-          >
+          <pre style={preStyle}>
             {shouldHideContent ? (
-              <span style={{ color: YAML_VALUE_COLOR }}>{HIDDEN_VALUE_PLACEHOLDER}</span>
+              <span style={{ color: 'var(--pf-t--color--yellow--30)' }}>
+                {HIDDEN_VALUE_PLACEHOLDER}
+              </span>
             ) : (
               colorizeYaml(yamlDump(resource.spec, { lineWidth: -1 }))
             )}
@@ -528,8 +577,6 @@ export const ResourceInspect: React.FC = () => {
   const renderStatus = () => {
     if (!resource?.status) return null;
 
-    // For Certificates, always show the toggle when status exists (status may reference secrets/certs);
-    // for other resources, only show when status contains sensitive-looking keys.
     const hasSensitiveData =
       resourceType === 'certificates' || containsSensitiveData(resource.status);
     const shouldHideContent = hasSensitiveData && !showStatusSensitiveData;
@@ -546,26 +593,18 @@ export const ResourceInspect: React.FC = () => {
                   showStatusSensitiveData ? t('Hide sensitive data') : t('Show sensitive data')
                 }
                 isChecked={showStatusSensitiveData}
-                onChange={(event, checked) => setShowStatusSensitiveData(checked)}
+                onChange={(_event, checked) => setShowStatusSensitiveData(checked)}
                 ouiaId="StatusSensitiveToggle"
               />
             )}
           </div>
         </CardTitle>
         <CardBody>
-          <pre
-            style={{
-              padding: '16px',
-              borderRadius: '4px',
-              overflow: 'auto',
-              fontSize: '13px',
-              maxHeight: '400px',
-              background: '#1e1e1e',
-              border: '1px solid #374151',
-            }}
-          >
+          <pre style={preStyle}>
             {shouldHideContent ? (
-              <span style={{ color: YAML_VALUE_COLOR }}>{HIDDEN_VALUE_PLACEHOLDER}</span>
+              <span style={{ color: 'var(--pf-t--color--yellow--30)' }}>
+                {HIDDEN_VALUE_PLACEHOLDER}
+              </span>
             ) : (
               colorizeYaml(yamlDump(resource.status, { lineWidth: -1 }))
             )}
@@ -578,9 +617,8 @@ export const ResourceInspect: React.FC = () => {
   const renderSecretProviderClassPodStatuses = () => {
     if (resourceType !== 'secretproviderclasses' || !resource) return null;
 
-    // Filter pod statuses that reference this SecretProviderClass
     const relevantPodStatuses = (podStatuses || []).filter(
-      (podStatus) => podStatus.status.secretProviderClassName === resource.metadata.name,
+      (podStatus) => podStatus.status?.secretProviderClassName === resource.metadata.name,
     );
 
     if (relevantPodStatuses.length === 0) {
@@ -603,27 +641,31 @@ export const ResourceInspect: React.FC = () => {
         </CardTitle>
         <CardBody>
           <div style={{ overflowX: 'auto' }}>
-            <table className="pf-c-table pf-m-compact pf-m-grid-md" style={{ width: '100%' }}>
+            <table className="console-plugin-template__table" style={{ width: '100%' }}>
               <thead>
                 <tr>
-                  <th>{t('Pod Name')}</th>
-                  <th>{t('Mounted')}</th>
-                  <th>{t('Created')}</th>
+                  <th className="console-plugin-template__table-th">{t('Pod Name')}</th>
+                  <th className="console-plugin-template__table-th">{t('Mounted')}</th>
+                  <th className="console-plugin-template__table-th">{t('Created')}</th>
                 </tr>
               </thead>
               <tbody>
                 {relevantPodStatuses.map((podStatus) => (
-                  <tr key={podStatus.metadata.name}>
-                    <td>{podStatus.status.podName || podStatus.metadata.name}</td>
-                    <td>
+                  <tr key={podStatus.metadata?.name} className="console-plugin-template__table-tr">
+                    <td className="console-plugin-template__table-td">
+                      {podStatus.status?.podName || podStatus.metadata?.name}
+                    </td>
+                    <td className="console-plugin-template__table-td">
                       <Label
-                        color={podStatus.status.mounted ? 'green' : 'red'}
-                        icon={podStatus.status.mounted ? <CheckCircleIcon /> : <TimesCircleIcon />}
+                        status={podStatus.status?.mounted ? 'success' : 'danger'}
+                        icon={podStatus.status?.mounted ? <CheckCircleIcon /> : <TimesCircleIcon />}
                       >
-                        {podStatus.status.mounted ? t('Yes') : t('No')}
+                        {podStatus.status?.mounted ? t('Yes') : t('No')}
                       </Label>
                     </td>
-                    <td>{formatTimestamp(podStatus.metadata.creationTimestamp)}</td>
+                    <td className="console-plugin-template__table-td">
+                      {formatTimestamp(podStatus.metadata?.creationTimestamp ?? '')}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -660,64 +702,56 @@ export const ResourceInspect: React.FC = () => {
             <div
               style={{
                 overflowX: 'auto',
-                background: '#1e1e1e',
+                background: 'var(--pf-t--global--background--color--secondary--default)',
                 borderRadius: '4px',
-                border: '1px solid #374151',
+                border: '1px solid var(--pf-t--global--border--color--default)',
                 paddingLeft: '16px',
                 paddingTop: '16px',
               }}
             >
-              <table className="pf-c-table pf-m-grid-md" style={{ width: '100%' }}>
+              <table className="console-plugin-template__table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
-                    <th style={{ paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>
-                      {t('Type')}
-                    </th>
-                    <th style={{ paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>
-                      {t('Reason')}
-                    </th>
-                    <th style={{ paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>
-                      {t('Message')}
-                    </th>
-                    <th style={{ paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>
-                      {t('Count')}
-                    </th>
-                    <th style={{ paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>
-                      {t('Last seen')}
-                    </th>
+                    <th className="console-plugin-template__table-th">{t('Type')}</th>
+                    <th className="console-plugin-template__table-th">{t('Reason')}</th>
+                    <th className="console-plugin-template__table-th">{t('Message')}</th>
+                    <th className="console-plugin-template__table-th">{t('Count')}</th>
+                    <th className="console-plugin-template__table-th">{t('Last seen')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sorted.map((evt) => (
-                    <tr key={evt.metadata?.name ?? evt.reason ?? ''}>
-                      <td style={{ paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>
-                        <Label color={evt.type === 'Warning' ? 'orange' : 'blue'}>
+                    <tr
+                      key={evt.metadata?.name ?? evt.reason ?? ''}
+                      className="console-plugin-template__table-tr"
+                    >
+                      <td className="console-plugin-template__table-td">
+                        <Label
+                          status={evt.type === 'Warning' ? 'warning' : undefined}
+                          color={evt.type !== 'Warning' ? 'blue' : undefined}
+                        >
                           {evt.type || 'Normal'}
                         </Label>
                       </td>
-                      <td style={{ paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>
-                        {evt.reason ?? '-'}
-                      </td>
+                      <td className="console-plugin-template__table-td">{evt.reason ?? '-'}</td>
                       <td
+                        className="console-plugin-template__table-td"
                         style={{
                           maxWidth: '20rem',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          paddingTop: '0.75rem',
-                          paddingBottom: '0.75rem',
                         }}
                         title={evt.message}
                       >
                         {evt.message ?? '-'}
                       </td>
-                      <td style={{ paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>
-                        {evt.count ?? 1}
-                      </td>
-                      <td style={{ paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>
+                      <td className="console-plugin-template__table-td">{evt.count ?? 1}</td>
+                      <td className="console-plugin-template__table-td">
                         {formatTimestamp(
                           evt.lastTimestamp ||
                             evt.firstTimestamp ||
-                            evt.metadata?.creationTimestamp,
+                            evt.metadata?.creationTimestamp ||
+                            '',
                         )}
                       </td>
                     </tr>
@@ -732,35 +766,12 @@ export const ResourceInspect: React.FC = () => {
   };
 
   const getResourceTypeDisplayName = () => {
-    switch (resourceType) {
-      case 'certificates':
-        return t('Certificate');
-      case 'issuers':
-        return t('Issuer');
-      case 'clusterissuers':
-        return t('ClusterIssuer');
-      case 'externalsecrets':
-        return t('ExternalSecret');
-      case 'clusterexternalsecrets':
-        return t('ClusterExternalSecret');
-      case 'secretstores':
-        return t('SecretStore');
-      case 'clustersecretstores':
-        return t('ClusterSecretStore');
-      case 'pushsecrets':
-        return t('PushSecret');
-      case 'clusterpushsecrets':
-        return t('ClusterPushSecret');
-      case 'secretproviderclasses':
-        return t('SecretProviderClass');
-      default:
-        return t('Resource');
-    }
+    return DISPLAY_NAMES[resourceType] ? t(DISPLAY_NAMES[resourceType]) : t('Resource');
   };
 
   if (!model) {
     return (
-      <div className="co-m-pane__body">
+      <div className="console-plugin-template__table-message">
         <Alert variant={AlertVariant.danger} title={t('Invalid resource type')} isInline>
           {t('The resource type "{resourceType}" is not supported.', { resourceType })}
         </Alert>
@@ -768,26 +779,24 @@ export const ResourceInspect: React.FC = () => {
     );
   }
 
-  // For SecretProviderClass, also wait for pod statuses to load
   const allLoaded = resourceType === 'secretproviderclasses' ? loaded && podStatusesLoaded : loaded;
 
   if (!allLoaded) {
     return (
-      <div className="co-m-loader co-an-fade-in-out">
-        <div className="co-m-loader-dot__one"></div>
-        <div className="co-m-loader-dot__two"></div>
-        <div className="co-m-loader-dot__three"></div>
+      <div className="console-plugin-template__loader">
+        <div className="console-plugin-template__loader-dot"></div>
+        <div className="console-plugin-template__loader-dot"></div>
+        <div className="console-plugin-template__loader-dot"></div>
       </div>
     );
   }
 
-  // Handle errors from both resource and pod status loading
   const anyError =
     loadError || (resourceType === 'secretproviderclasses' ? podStatusesError : null);
 
   if (anyError) {
     return (
-      <div className="co-m-pane__body">
+      <div className="console-plugin-template__table-message">
         <Alert variant={AlertVariant.danger} title={t('Error loading resource')} isInline>
           {anyError.message}
         </Alert>
@@ -797,7 +806,7 @@ export const ResourceInspect: React.FC = () => {
 
   if (!resource) {
     return (
-      <div className="co-m-pane__body">
+      <div className="console-plugin-template__table-message">
         <Alert variant={AlertVariant.warning} title={t('Resource not found')} isInline>
           {t('The {resourceType} "{name}" was not found.', {
             resourceType: getResourceTypeDisplayName(),
@@ -814,40 +823,26 @@ export const ResourceInspect: React.FC = () => {
         <title>{t('{resourceType} details', { resourceType: getResourceTypeDisplayName() })}</title>
       </Helmet>
 
-      <div className="co-m-pane__body">
-        <div className="co-m-pane__heading">
-          <div className="co-m-pane__name co-resource-item">
-            <Button variant="plain" onClick={handleBackClick} style={{ marginRight: '16px' }}>
-              <ArrowLeftIcon />
-            </Button>
-            <KeyIcon className="co-m-resource-icon" style={{ marginRight: '8px' }} />
-            <Title headingLevel="h1" size="lg">
-              {getResourceTypeDisplayName()}: {name}
-            </Title>
-          </div>
+      <div className="console-plugin-template__inspect-page">
+        <div className="console-plugin-template__inspect-header">
+          <Button variant="plain" onClick={handleBackClick}>
+            <ArrowLeftIcon />
+          </Button>
+          <KeyIcon style={{ marginRight: '8px' }} />
+          <Title headingLevel="h1" size="lg">
+            {getResourceTypeDisplayName()}: {name}
+          </Title>
         </div>
 
         <Grid hasGutter>
-          <GridItem span={12} style={{ padding: '0rem 2rem' }}>
-            {renderMetadata()}
-          </GridItem>
-          <GridItem span={6} style={{ paddingLeft: '2rem' }}>
-            {renderLabels()}
-          </GridItem>
-          <GridItem span={6} style={{ paddingRight: '2rem' }}>
-            {renderAnnotations()}
-          </GridItem>
-          <GridItem span={6} style={{ paddingLeft: '2rem' }}>
-            {renderSpecification()}
-          </GridItem>
+          <GridItem span={12}>{renderMetadata()}</GridItem>
+          <GridItem span={6}>{renderLabels()}</GridItem>
+          <GridItem span={6}>{renderAnnotations()}</GridItem>
+          <GridItem span={6}>{renderSpecification()}</GridItem>
           <GridItem span={6}>{renderStatus()}</GridItem>
-          <GridItem span={12} style={{ padding: '0rem 2rem' }}>
-            {renderEvents()}
-          </GridItem>
+          <GridItem span={12}>{renderEvents()}</GridItem>
           {resourceType === 'secretproviderclasses' && (
-            <GridItem span={12} style={{ padding: '0rem 2rem' }}>
-              {renderSecretProviderClassPodStatuses()}
-            </GridItem>
+            <GridItem span={12}>{renderSecretProviderClassPodStatuses()}</GridItem>
           )}
         </Grid>
       </div>

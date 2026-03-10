@@ -31,6 +31,7 @@ export interface K8sEvent {
 
 const RESOURCE_TYPE_TO_KIND: Record<string, string> = {
   certificates: 'Certificate',
+  certificaterequests: 'CertificateRequest',
   issuers: 'Issuer',
   clusterissuers: 'ClusterIssuer',
   externalsecrets: 'ExternalSecret',
@@ -40,6 +41,14 @@ const RESOURCE_TYPE_TO_KIND: Record<string, string> = {
   pushsecrets: 'PushSecret',
   clusterpushsecrets: 'ClusterPushSecret',
   secretproviderclasses: 'SecretProviderClass',
+  nodefeaturediscoveries: 'NodeFeatureDiscovery',
+  nodefeaturerules: 'NodeFeatureRule',
+  nodefeatures: 'NodeFeature',
+  pipelines: 'Pipeline',
+  pipelineruns: 'PipelineRun',
+  tasks: 'Task',
+  taskruns: 'TaskRun',
+  tektonconfigs: 'TektonConfig',
 };
 
 export function getInvolvedObjectKind(resourceType: string): string {

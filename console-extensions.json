@@ -16,5 +16,92 @@
       "perspective": "admin",
       "section": "home"
     }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": "/cert-manager",
+      "component": { "$codeRef": "CertManagerPage.CertManagerPage" }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": false,
+      "path": ["/cert-manager/inspect"],
+      "component": { "$codeRef": "ResourceInspect.ResourceInspect" }
+    }
+  },
+  {
+    "type": "console.navigation/section",
+    "properties": {
+      "id": "plugins",
+      "name": "%plugin__console-plugin-template~Plugins%",
+      "perspective": "admin",
+      "insertAfter": "observe"
+    }
+  },
+  {
+    "type": "console.navigation/href",
+    "properties": {
+      "id": "cert-manager",
+      "name": "%plugin__console-plugin-template~cert-manager%",
+      "href": "/cert-manager",
+      "perspective": "admin",
+      "section": "plugins"
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": "/nfd",
+      "component": { "$codeRef": "NfdPage.NfdPage" }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": false,
+      "path": ["/nfd/inspect"],
+      "component": { "$codeRef": "ResourceInspect.ResourceInspect" }
+    }
+  },
+  {
+    "type": "console.navigation/href",
+    "properties": {
+      "id": "nfd",
+      "name": "%plugin__console-plugin-template~Node Feature Discovery%",
+      "href": "/nfd",
+      "perspective": "admin",
+      "section": "plugins"
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": "/pipelines",
+      "component": { "$codeRef": "PipelinesPage.PipelinesPage" }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": false,
+      "path": ["/pipelines/inspect"],
+      "component": { "$codeRef": "ResourceInspect.ResourceInspect" }
+    }
+  },
+  {
+    "type": "console.navigation/href",
+    "properties": {
+      "id": "pipelines",
+      "name": "%plugin__console-plugin-template~Red Hat OpenShift Pipelines%",
+      "href": "/pipelines",
+      "perspective": "admin",
+      "section": "plugins"
+    }
   }
 ]
