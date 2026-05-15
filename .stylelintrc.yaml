@@ -2,8 +2,8 @@ extends:
   - stylelint-config-standard
 rules:
   # Disallow color names and hex colors as these don't work well with dark mode.
-  # Use PF global variables instead:
-  # https://patternfly-react-main.surge.sh/developer-resources/global-css-variables#global-css-variables
+  # Use PF6 semantic tokens (--pf-t--*) or global variables (--pf-v6-global--*) instead:
+  # https://www.patternfly.org/tokens/all-patternfly-tokens
   color-named: never
   color-no-hex: true
   # PatternFly CSS vars don't conform to stylelint's regex. Disable this rule.
