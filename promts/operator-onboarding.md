@@ -17,7 +17,7 @@ This document defines **two phases in one task**. **Do not stop after Phase 1.**
 **Rules for agents:**
 
 1. After Phase 1 passes its gate, **immediately continue** with Phase 2 in the **same session**—do not wait for a separate user message, a second prompt, or “run the unit-test template later.”
-2. If the repo lacks Jest (`jest.config.cjs`, `src/setupTests.ts`, `yarn test`), **add or restore that tooling first**, then write tests (see [Phase 2](#phase-2--unit-tests-for-a-newly-added-operator-dashboard-after-phase-1)).
+2. If the repo lacks Jest (`jest.config.ts`, `setup-tests.ts`, `yarn test`), **add or restore that tooling first**, then write tests (see [Phase 2](#phase-2--unit-tests-for-a-newly-added-operator-dashboard-after-phase-1)).
 3. Treat Phase 2 as **blocked** until Phase 1 is done (routes, components, and extensions for the operator must exist).
 4. The task is **complete** only when **both** phases pass their gates. The final summary must include Phase 1 **and** Phase 2 validation.
 
@@ -322,7 +322,7 @@ Create only if missing. Generic empty state with `EmptyState` (titleText, icon={
 
 **Use ResourceTable.** One file per resource kind.
 
-- **Import React Router Link:** Add `import { Link } from ‘react-router-dom’;` at the top.
+- **Import React Router Link:** Add `import { Link } from ‘react-router’;` at the top.
 - Build **columns**: array of `{ title, width? }` (Name, Namespace if namespaced, then algorithm columns, then Actions).
 - Build **rows**: from `useK8sWatchResource` list; each row’s **cells** array includes:
   - **Name cell:** Use `<Link key="name" to={inspectHref}>{name}</Link>` for SPA navigation (not `<a href>`).
@@ -652,7 +652,7 @@ export const MyOperatorPage: React.FC = () => {
   if (operatorStatus === 'loading') {
     return (
       <>
-        <Helmet><title>{pageTitle}</title></Helmet>
+        <DocumentTitle>{pageTitle}</DocumentTitle>
         <div className="console-plugin-template__inspect-page">
           <Spinner size="lg" aria-label={t('Loading...')} />
         </div>
@@ -664,7 +664,7 @@ export const MyOperatorPage: React.FC = () => {
   if (operatorStatus === 'not-installed') {
     return (
       <>
-        <Helmet><title>{pageTitle}</title></Helmet>
+        <DocumentTitle>{pageTitle}</DocumentTitle>
         <div className="console-plugin-template__inspect-page">
           <Title headingLevel="h1" size="xl">
             {pageTitle}
@@ -678,7 +678,7 @@ export const MyOperatorPage: React.FC = () => {
   // Main dashboard
   return (
     <>
-      <Helmet><title>{pageTitle}</title></Helmet>
+      <DocumentTitle>{pageTitle}</DocumentTitle>
       <div className="console-plugin-template__inspect-page">
         <Title
           headingLevel="h1"
@@ -790,7 +790,7 @@ In `charts/openshift-console-plugin/templates/rbac-clusterroles.yaml`, add or ap
 - [ ] Page has visible **`<Title>`** component at top with proper spacing (`headingLevel="h1"`, `size="xl"`).
 - [ ] All page states (loading, not-installed, main) wrapped in `console-plugin-template__inspect-page` for proper padding.
 - [ ] Loading state uses `<Spinner>` from PatternFly (not custom loader for page-level).
-- [ ] All table navigation uses **`<Link to>`** from react-router-dom (no `<a href>` or `window.location.href`).
+- [ ] All table navigation uses **`<Link to>`** from react-router (no `<a href>` or `window.location.href`).
 - [ ] Tables use **plugin-prefixed CSS classes** (`console-plugin-template__table`, `__table-th`, `__table-td`, `__table-tr`), not OpenShift classes (`co-m-*`, `table`, `table-hover`).
 - [ ] Table headers and cells use **CSS classes** (no inline `style` attributes for padding/alignment).
 - [ ] Empty states use new PatternFly API (`titleText` prop, `icon={SearchIcon}`, not separate `<Title>` component).
@@ -801,7 +801,7 @@ In `charts/openshift-console-plugin/templates/rbac-clusterroles.yaml`, add or ap
 - [ ] Dashboard cards have vertical spacing via `gap` in `console-plugin-template__dashboard-cards` wrapper.
 
 **Phase 2 — Unit tests (required for full operator add):**
-- [ ] Jest + RTL wired up if the repo had no `yarn test` (`jest.config.cjs`, `src/setupTests.ts`, scripts in `package.json`, ESLint `jest` env for `*.test.{ts,tsx}`).
+- [ ] Jest + RTL wired up if the repo had no `yarn test` (`jest.config.ts`, `setup-tests.ts`, scripts in `package.json`, ESLint `jest` env for `*.test.{ts,tsx}`).
 - [ ] Tests added under `src/**/__tests__/**` for operator page (loading / not-installed / installed), tables, `ResourceTable`, `ExpandableResourceTable`, `ResourceTableRowActions`, `useOperatorDetection`, and shared helpers as applicable.
 - [ ] **`yarn test`** passes; **`yarn lint`** passes after tests.
 
@@ -842,7 +842,7 @@ If Phase 2 was legitimately skipped (user asked for Phase 1 only), state that ex
 **Navigation:**
 ```tsx
 // ✅ Good: React Router Link
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 <Link to={inspectHref}>{name}</Link>
 
 // ❌ Bad: Full page reload
@@ -945,7 +945,7 @@ if (loading) {
 ```tsx
 // ✅ Good: PatternFly 6 API
 <EmptyState
-  titleText={emptyStateTitle || t('No resources found')}
+  titleText={emptyStateTitle ?? t('No resources found')}
   icon={SearchIcon}
   headingLevel="h4"
 >
@@ -977,6 +977,88 @@ if (loading) {
 
 ---
 
+## TypeScript & ESLint Strict Rules (CRITICAL for AI Code Generation)
+
+This repo uses `tseslint.configs.strictTypeChecked` + `stylisticTypeChecked`. Code that violates these rules will **fail `yarn lint`**. Follow these patterns exactly:
+
+### Nullish Coalescing (`??` not `||`)
+
+```tsx
+// ✅ Always use ?? for default values
+const name = resource.metadata?.name ?? '';
+const width = column.width ?? 0;
+titleText={emptyStateTitle ?? t('No resources found')}
+
+// ❌ NEVER use || for defaults (lint error: prefer-nullish-coalescing)
+const name = resource.metadata?.name || '';
+```
+
+### Template Literal Safety
+
+```tsx
+// ✅ Wrap non-string values in String() inside template literals
+const width = `${String(column.width ?? 0)}%`;
+data-test={`${dataTest ?? ''}-loading`}
+
+// ❌ Numbers/undefined directly in template literals (lint error: restrict-template-expressions)
+const width = `${column.width}%`;
+data-test={`${dataTest}-loading`}
+```
+
+### Import Type
+
+```tsx
+// ✅ Use `import type` for type-only imports
+import type { K8sGroupVersionKind } from '@openshift-console/dynamic-plugin-sdk/lib/extensions/console-types';
+import type { Pipeline } from './crds/Pipeline';
+
+// ❌ Regular import for types (lint error: consistent-type-imports)
+import { K8sGroupVersionKind } from '...';
+```
+
+### SDK Hook Return Types
+
+```tsx
+// ✅ Assert the return type of useK8sWatchResource to avoid `any` propagation
+const [resources, loaded, loadError] = useK8sWatchResource<MyResource[]>({
+  groupVersionKind: MyModel,
+  namespace: watchNamespace,
+  isList: true,
+}) as [MyResource[] | undefined, boolean, Error | undefined];
+
+// ✅ useDeleteModal returns a FUNCTION directly (NOT a tuple)
+const launchDeleteModal = useDeleteModal(resource);
+
+// ❌ WRONG: useDeleteModal does NOT return an array
+const [launchDeleteModal] = useDeleteModal(resource);
+```
+
+### Page Titles
+
+```tsx
+// ✅ Use DocumentTitle from the SDK
+import { DocumentTitle } from '@openshift-console/dynamic-plugin-sdk';
+<DocumentTitle>{pageTitle}</DocumentTitle>
+
+// ❌ NEVER use react-helmet (not installed, type errors with React 18)
+import Helmet from 'react-helmet';
+<Helmet><title>{pageTitle}</title></Helmet>
+```
+
+### Optional Chaining
+
+```tsx
+// ✅ Always use optional chaining for K8s resource fields
+const name = resource.metadata?.name ?? '';
+const ns = resource.metadata?.namespace ?? '';
+const conditions = resource.status?.conditions ?? [];
+
+// ❌ Direct access without optional chaining (type error: possibly undefined)
+const name = resource.metadata.name;
+```
+
+---
+
 ## Phase 2 — Unit tests for a newly added operator dashboard (after Phase 1)
 
 **Workflow (mandatory for full runs):** As soon as Phase 1 meets its gate (`yarn build-dev` + `yarn lint`), **continue in the same session** and implement Phase 2. Do not hand off to the user with “next, run the unit-test template.” Do not generate tests **before** the dashboard files, routes, and shared components for that operator exist.
@@ -987,8 +1069,8 @@ if (loading) {
 
 | Item | Purpose |
 |------|--------|
-| `jest.config.cjs` | `ts-jest`, `jsdom`, `src/**/*.test.{ts,tsx}`, CSS → `identity-obj-proxy` |
-| `src/setupTests.ts` | `@testing-library/jest-dom`; shared **`react-i18next`** mock (`t()` returns keys + simple `{{var}}` substitution) |
+| `jest.config.ts` | `@swc/jest`, `jsdom`, `src/**/*.spec.{ts,tsx}`, CSS & files mocked |
+| `setup-tests.ts` | `@testing-library/jest-dom`; `TextEncoder` polyfill; `data-test` attribute config |
 | `src/test-utils/dataTestQuery.ts` | `getByDataTest('…')` — production tables use **`data-test`**, not `data-testid` (Cypress / console convention) |
 | `yarn test` / `yarn test:watch` / `yarn test:ci` | Run unit tests (CI adds coverage) |
 | `integration-tests/` | **Cypress e2e** only; unit tests live under `src/**/__tests__/` |
@@ -996,8 +1078,8 @@ if (loading) {
 **Mocks (match repo patterns):**
 
 - **`@openshift-console/dynamic-plugin-sdk`:** `useK8sWatchResource`, `useK8sModel`, `useDeleteModal`, and a lightweight **`Timestamp`** stub when needed.
-- **`react-helmet`:** Default export — `jest.mock('react-helmet', () => ({ __esModule: true, default: ({ children }) => <>{children}</> }))` when tests render pages that use `<Helmet>`.
-- **`react-router-dom`:** Wrap components that use `<Link>` in **`MemoryRouter`** (or mock `Link` if appropriate).
+- **`@openshift-console/dynamic-plugin-sdk` (DocumentTitle):** The SDK mock already provides `DocumentTitle` (returns `null`). No additional mocking needed for page titles.
+- **`react-router`:** Wrap components that use `<Link>` in **`MemoryRouter`** (or mock `Link` if appropriate).
 - **Operator page tests:** Optionally **`jest.mock`** child `*Table` components with simple stubs (`data-testid="stub-…"`) so suites focus on loading / not-installed / installed layout without duplicating every watch.
 - **Do not** set `configure({ testIdAttribute: 'data-test' })` globally unless all tests switch to `data-test`; prefer **`getByDataTest()`** for `data-test` and **`getByTestId`** for test-only stubs.
 
@@ -1053,7 +1135,7 @@ Input (fill from the implemented dashboard):
 
 Requirements:
 - Read existing tests under `src/**/__tests__/**/*.test.{ts,tsx}` and match **mocks, `data-test` vs `data-testid`, and `getByDataTest`** usage from `src/test-utils/dataTestQuery.ts`.
-- Keep `src/setupTests.ts` `react-i18next` mock; mock `react-helmet` default export in page tests as needed.
+- Keep `setup-tests.ts` `react-i18next` mock; `DocumentTitle` from the SDK mock is already stubbed (returns null).
 - Cover **happy path**, **edge cases** (empty lists, long strings, `#ALL_NS#` / undefined namespace, rapid button clicks), and **error handling** (watch/list errors with `.message`).
 - Mock `@openshift-console/dynamic-plugin-sdk` hooks per test file; use `MemoryRouter` where `Link` is rendered.
 - For the operator page, you may mock heavy child tables with small stubs so tests focus on loading / not-installed / installed shell — document stubs in the summary.
