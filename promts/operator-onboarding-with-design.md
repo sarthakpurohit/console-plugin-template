@@ -159,11 +159,10 @@ import { ChartDonut } from '@patternfly/react-charts/victory';
 
 ### React & Router Version
 
-- **React 17** at build time (SDK 4.21.0 validates shared modules against React 17)
-- **React 18** at runtime (OpenShift Console upgraded Jan-April 2026)
+- **React 18** at build time and runtime (SDK 4.22+, OpenShift Console)
 - **PatternFly 6.3+** supports React 17, 18, and **19** (non-breaking — [release highlights](https://www.patternfly.org/get-started/release-highlights))
-- **react-router 5.x** in SDK shared modules; console migrating to 7.x
-- Template will upgrade React/router when SDK publishes stable release with matching versions
+- **react-router 7.x** — use `import { Link, MemoryRouter } from 'react-router'` (NOT `react-router-dom`)
+- **DocumentTitle** from `@openshift-console/dynamic-plugin-sdk` for page titles (NOT `react-helmet`)
 
 ### PF6 Upgrade Tooling
 

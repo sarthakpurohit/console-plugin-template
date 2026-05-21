@@ -1,6 +1,15 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import { EmptyState, EmptyStateBody, Alert, AlertVariant, Spinner } from '@patternfly/react-core';
+import {
+  EmptyState,
+  EmptyStateBody,
+  Alert,
+  AlertVariant,
+  Spinner,
+  Button,
+} from '@patternfly/react-core';
+import { Link } from 'react-router';
+import { useDeleteModal } from '@openshift-console/dynamic-plugin-sdk';
 import { SearchIcon } from '@patternfly/react-icons';
 
 interface Column {
@@ -44,7 +53,7 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
 
   if (loading) {
     return (
-      <div className="console-plugin-template__loader" data-test={`${dataTest}-loading`}>
+      <div className="console-plugin-template__loader" data-test={`${dataTest ?? ''}-loading`}>
         <Spinner size="lg" />
       </div>
     );
@@ -52,7 +61,7 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
 
   if (error) {
     return (
-      <div className="console-plugin-template__table-message" data-test={`${dataTest}-error`}>
+      <div className="console-plugin-template__table-message" data-test={`${dataTest ?? ''}-error`}>
         <Alert variant={AlertVariant.danger} title={t('Error loading resources')} isInline>
           {error}
         </Alert>
@@ -62,9 +71,9 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
 
   if (rows.length === 0) {
     return (
-      <div className="console-plugin-template__table-message" data-test={`${dataTest}-empty`}>
+      <div className="console-plugin-template__table-message" data-test={`${dataTest ?? ''}-empty`}>
         <EmptyState
-          titleText={emptyStateTitle || t('No resources found')}
+          titleText={emptyStateTitle ?? t('No resources found')}
           icon={SearchIcon}
           headingLevel="h4"
         >
@@ -74,7 +83,7 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
     );
   }
 
-  const totalSpecifiedWidth = columns.reduce((sum, col) => sum + (col.width || 0), 0);
+  const totalSpecifiedWidth = columns.reduce((sum, col) => sum + (col.width ?? 0), 0);
   const hasSpecifiedWidths = totalSpecifiedWidth > 0;
   const defaultWidth = hasSpecifiedWidths ? undefined : 100 / columns.length;
 
@@ -85,7 +94,9 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
           <thead>
             <tr>
               {columns.map((column, index) => {
-                const width = hasSpecifiedWidths ? `${column.width || 0}%` : `${defaultWidth}%`;
+                const width = hasSpecifiedWidths
+                  ? `${String(column.width ?? 0)}%`
+                  : `${String(defaultWidth)}%`;
 
                 return (
                   <th
@@ -113,6 +124,41 @@ export const ResourceTable: React.FC<ResourceTableProps> = ({
           </tbody>
         </table>
       </div>
+    </div>
+  );
+};
+
+interface ResourceTableRowActionsProps {
+  resource: {
+    metadata?: { name?: string; namespace?: string };
+    kind?: string;
+    apiVersion?: string;
+  };
+  inspectHref: string;
+}
+
+export const ResourceTableRowActions: React.FC<ResourceTableRowActionsProps> = ({
+  resource,
+  inspectHref,
+}) => {
+  const { t } = useTranslation('plugin__console-plugin-template');
+  const launchDeleteModal = useDeleteModal(resource);
+
+  return (
+    <div className="console-plugin-template__action-buttons">
+      <Link to={inspectHref}>
+        <Button className="console-plugin-template__action-inspect" variant="primary" size="sm">
+          {t('Inspect')}
+        </Button>
+      </Link>
+      <Button
+        className="console-plugin-template__action-delete"
+        variant="danger"
+        size="sm"
+        onClick={launchDeleteModal}
+      >
+        {t('Delete')}
+      </Button>
     </div>
   );
 };

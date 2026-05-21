@@ -1,16 +1,24 @@
 /*
- * A majority of the OpenShift Console's dynamic plugin SDK components and API
- * implementations are only available at runtime as they are provided using
- * module federation.
+ * Mock for @openshift-console/dynamic-plugin-sdk
  *
- * As a result, no implementations of these components and APIs are available
- * when running tests in your plugin.
+ * The SDK's components and hooks are only available at runtime via module
+ * federation. This file provides minimal stubs so unit tests can render
+ * components that depend on SDK exports.
  *
- * To workaround this, you may add minimal stub implementations of components
- * and APIs you use in your plugin here to allow your tests to run.
+ * When writing tests:
+ * - Cast the mock: `const mockHook = useK8sModel as jest.Mock;`
+ * - Override per-test: `mockHook.mockReturnValue([...]);`
  */
 import type * as SDK from '@openshift-console/dynamic-plugin-sdk';
 
 export const ListPageHeader: typeof SDK.ListPageHeader = ({ title }) => <h1>{title}</h1>;
 
 export const DocumentTitle: typeof SDK.DocumentTitle = () => null;
+
+export const useK8sModel = jest.fn(() => [undefined, true]);
+
+export const useK8sWatchResource = jest.fn(() => [[], true, undefined]);
+
+export const useActiveNamespace = jest.fn(() => ['test-namespace', jest.fn()]);
+
+export const useDeleteModal = jest.fn(() => jest.fn());

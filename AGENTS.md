@@ -258,6 +258,73 @@ See [Console Plugin SDK README](https://github.com/openshift/console/tree/master
 - [PF5 → PF6 Upgrade Guide](https://www.patternfly.org/get-started/upgrade)
 - [Dynamic Plugin Enhancement Proposal](https://github.com/openshift/enhancements/blob/master/enhancements/console/dynamic-plugins.md)
 
+## AI Code Generation Patterns (CRITICAL)
+
+These patterns MUST be followed exactly. Violating them causes cascading build/lint failures.
+
+### Imports & APIs
+
+| Correct | WRONG (will fail) |
+|---------|-------------------|
+| `import { Link } from 'react-router'` | `import { Link } from 'react-router-dom'` |
+| `import { DocumentTitle } from '@openshift-console/dynamic-plugin-sdk'` | `import Helmet from 'react-helmet'` |
+| `import { MemoryRouter } from 'react-router'` | `import { MemoryRouter } from 'react-router-dom'` |
+| `import type { K8sGroupVersionKind } from '...'` | `import { K8sGroupVersionKind } from '...'` |
+
+### SDK Hook Signatures
+
+```tsx
+// useDeleteModal returns a FUNCTION directly (NOT a tuple/array)
+const launchDeleteModal = useDeleteModal(resource);
+// WRONG: const [launchDeleteModal] = useDeleteModal(resource);
+
+// useK8sModel returns [model | undefined, inFlight: boolean]
+const [model, inFlight] = useK8sModel(gvk);
+
+// useK8sWatchResource — cast the return to avoid `any` propagation
+const [resources, loaded, loadError] = useK8sWatchResource<MyResource[]>({
+  groupVersionKind: MyModel,
+  namespace,
+  isList: true,
+}) as [MyResource[] | undefined, boolean, Error | undefined];
+
+// useActiveNamespace returns [namespace: string, setNamespace: function]
+const [activeNamespace] = useActiveNamespace();
+```
+
+### ESLint Strict Rules (enforced — `strictTypeChecked` + `stylisticTypeChecked`)
+
+1. **Always `??` not `||`** for default values — `prefer-nullish-coalescing`
+2. **Always `String()` in template literals** for non-string values — `restrict-template-expressions`
+3. **Always `import type`** for type-only imports — `consistent-type-imports`
+4. **Always optional chaining** for K8s resource fields — `resource.metadata?.name ?? ''`
+5. **Never `any` without assertion** — cast `useK8sWatchResource` returns explicitly
+6. **Never `.closest()` in tests** — use `getByRole('link', { name })` — `testing-library/no-node-access`
+
+### Page Titles
+
+```tsx
+// Use DocumentTitle from SDK (react-helmet is NOT installed)
+import { DocumentTitle } from '@openshift-console/dynamic-plugin-sdk';
+<DocumentTitle>{pageTitle}</DocumentTitle>
+```
+
+### Test Patterns
+
+- Tests use `.spec.ts`/`.spec.tsx` extension (NOT `.test.ts`)
+- `setup-tests.ts` provides `TextEncoder`/`TextDecoder` polyfill (required by react-router 7 in jsdom)
+- `__mocks__/@openshift-console/dynamic-plugin-sdk.tsx` provides mocked hooks
+- Use `data-test` attribute (configured via `testIdAttribute` in setup-tests.ts)
+- Wrap components using `<Link>` in `<MemoryRouter>` from `'react-router'`
+- Use `screen.getByRole('link', { name: 'text' })` instead of `.closest('a')`
+- Use `fireEvent.click()` from testing-library, not `.click()` on elements
+
+### CSS Rules
+
+- One `:root` block per CSS file (no duplicates — `stylelint: no-duplicate-selectors`)
+- All custom classes prefixed with `console-plugin-template__`
+- No hex colors — use PatternFly CSS variables only
+
 ## Quick Decision Guide
 
 **When should I...**

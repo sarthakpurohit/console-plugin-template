@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/restrict-template-expressions, @typescript-eslint/prefer-nullish-coalescing */
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import Helmet from 'react-helmet';
 import {
   Title,
   Card,
@@ -19,18 +19,19 @@ import {
   Switch,
 } from '@patternfly/react-core';
 import { ArrowLeftIcon, KeyIcon, CheckCircleIcon, TimesCircleIcon } from '@patternfly/react-icons';
-import { useK8sWatchResource } from '@openshift-console/dynamic-plugin-sdk';
+import { useK8sWatchResource, DocumentTitle } from '@openshift-console/dynamic-plugin-sdk';
 import { CertificateModel } from './components/crds/Certificate';
 import { IssuerModel, ClusterIssuerModel } from './components/crds/Issuer';
 import { ExternalSecretModel, ClusterExternalSecretModel } from './components/crds/ExternalSecret';
 import { SecretStoreModel, ClusterSecretStoreModel } from './components/crds/SecretStore';
 import { PushSecretModel, ClusterPushSecretModel } from './components/crds/PushSecret';
+import type { SecretProviderClassPodStatus } from './components/crds/SecretProviderClass';
 import {
   SecretProviderClassModel,
   SecretProviderClassPodStatusModel,
-  SecretProviderClassPodStatus,
 } from './components/crds/SecretProviderClass';
-import { EventModel, getInvolvedObjectKind, K8sEvent } from './components/crds/Events';
+import type { K8sEvent } from './components/crds/Events';
+import { EventModel, getInvolvedObjectKind } from './components/crds/Events';
 import { dump as yamlDump } from 'js-yaml';
 
 // YAML syntax colors — use PF6 semantic tokens for dark mode support
@@ -47,7 +48,7 @@ function colorizeYaml(yamlString: string): React.ReactNode {
     <>
       {lines.map((line, i) => {
         // Key: value
-        const keyValueMatch = line.match(/^(\s*)(.+?)(\s*:\s*)(.*)$/);
+        const keyValueMatch = /^(\s*)(.+?)(\s*:\s*)(.*)$/.exec(line);
         if (keyValueMatch) {
           const [, indent, key, sep, value] = keyValueMatch;
           return (
@@ -61,7 +62,7 @@ function colorizeYaml(yamlString: string): React.ReactNode {
           );
         }
         // List item: - value
-        const listMatch = line.match(/^(\s*)(-\s+)(.*)$/);
+        const listMatch = /^(\s*)(-\s+)(.*)$/.exec(line);
         if (listMatch) {
           const [, indent, dash, rest] = listMatch;
           return (
@@ -162,9 +163,9 @@ export const ResourceInspect: React.FC = () => {
     resourceType === 'clusterpushsecrets';
 
   const [resource, loaded, loadError] = useK8sWatchResource<any>({
-    groupVersionKind: model,
+    groupVersionKind: model ?? undefined,
     name: name,
-    namespace: isClusterScoped ? undefined : namespace || 'demo',
+    namespace: isClusterScoped ? undefined : (namespace ?? 'demo'),
     isList: false,
   });
 
@@ -364,7 +365,7 @@ export const ResourceInspect: React.FC = () => {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {Object.entries(labels).map(([key, value]) => (
               <Label key={key} color="blue">
-                {key}: {value}
+                {key}: {String(value)}
               </Label>
             ))}
           </div>
@@ -412,7 +413,7 @@ export const ResourceInspect: React.FC = () => {
                   {key}
                 </DescriptionListTerm>
                 <DescriptionListDescription style={{ wordBreak: 'break-all', flex: 1 }}>
-                  {value}
+                  {String(value)}
                 </DescriptionListDescription>
               </DescriptionListGroup>
             ))}
@@ -499,7 +500,9 @@ export const ResourceInspect: React.FC = () => {
                 id="spec-sensitive-toggle"
                 label={showSpecSensitiveData ? t('Hide sensitive data') : t('Show sensitive data')}
                 isChecked={showSpecSensitiveData}
-                onChange={(event, checked) => setShowSpecSensitiveData(checked)}
+                onChange={(event, checked) => {
+                  setShowSpecSensitiveData(checked);
+                }}
                 ouiaId="SpecificationSensitiveToggle"
               />
             )}
@@ -549,7 +552,9 @@ export const ResourceInspect: React.FC = () => {
                   showStatusSensitiveData ? t('Hide sensitive data') : t('Show sensitive data')
                 }
                 isChecked={showStatusSensitiveData}
-                onChange={(event, checked) => setShowStatusSensitiveData(checked)}
+                onChange={(event, checked) => {
+                  setShowStatusSensitiveData(checked);
+                }}
                 ouiaId="StatusSensitiveToggle"
               />
             )}
@@ -583,7 +588,7 @@ export const ResourceInspect: React.FC = () => {
 
     // Filter pod statuses that reference this SecretProviderClass
     const relevantPodStatuses = (podStatuses || []).filter(
-      (podStatus) => podStatus.status.secretProviderClassName === resource.metadata.name,
+      (podStatus) => podStatus.status?.secretProviderClassName === resource.metadata?.name,
     );
 
     if (relevantPodStatuses.length === 0) {
@@ -616,17 +621,17 @@ export const ResourceInspect: React.FC = () => {
               </thead>
               <tbody>
                 {relevantPodStatuses.map((podStatus) => (
-                  <tr key={podStatus.metadata.name}>
-                    <td>{podStatus.status.podName || podStatus.metadata.name}</td>
+                  <tr key={podStatus.metadata?.name}>
+                    <td>{podStatus.status?.podName ?? podStatus.metadata?.name}</td>
                     <td>
                       <Label
-                        color={podStatus.status.mounted ? 'green' : 'red'}
-                        icon={podStatus.status.mounted ? <CheckCircleIcon /> : <TimesCircleIcon />}
+                        color={podStatus.status?.mounted ? 'green' : 'red'}
+                        icon={podStatus.status?.mounted ? <CheckCircleIcon /> : <TimesCircleIcon />}
                       >
-                        {podStatus.status.mounted ? t('Yes') : t('No')}
+                        {podStatus.status?.mounted ? t('Yes') : t('No')}
                       </Label>
                     </td>
-                    <td>{formatTimestamp(podStatus.metadata.creationTimestamp)}</td>
+                    <td>{formatTimestamp(podStatus.metadata?.creationTimestamp ?? '')}</td>
                   </tr>
                 ))}
               </tbody>
@@ -718,9 +723,10 @@ export const ResourceInspect: React.FC = () => {
                       </td>
                       <td style={{ paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>
                         {formatTimestamp(
-                          evt.lastTimestamp ||
-                            evt.firstTimestamp ||
-                            evt.metadata?.creationTimestamp,
+                          evt.lastTimestamp ??
+                            evt.firstTimestamp ??
+                            evt.metadata?.creationTimestamp ??
+                            '',
                         )}
                       </td>
                     </tr>
@@ -813,9 +819,9 @@ export const ResourceInspect: React.FC = () => {
 
   return (
     <>
-      <Helmet>
-        <title>{t('{resourceType} details', { resourceType: getResourceTypeDisplayName() })}</title>
-      </Helmet>
+      <DocumentTitle>
+        {t('{resourceType} details', { resourceType: getResourceTypeDisplayName() })}
+      </DocumentTitle>
 
       <div className="console-plugin-template__inspect-page">
         <div className="console-plugin-template__inspect-heading">
